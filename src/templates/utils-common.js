@@ -1,6 +1,3 @@
-import Cookie from 'cookie'
-import JsCookie from 'js-cookie'
-
 /** @typedef {import('../../types/internal').ResolvedOptions} ResolvedOptions */
 
 /**
@@ -170,10 +167,14 @@ export function getLocaleCookie (req, { useCookie, cookieKey, localeCodes }) {
     let localeCode
 
     if (process.client) {
-      localeCode = JsCookie.get(cookieKey)
+      import('js-cookie').then(JsCookie => {
+        localeCode = JsCookie.get(cookieKey)
+      })
     } else if (req && typeof req.headers.cookie !== 'undefined') {
-      const cookies = req.headers && req.headers.cookie ? Cookie.parse(req.headers.cookie) : {}
-      localeCode = cookies[cookieKey]
+      import('cookie').then(Cookie => {
+        const cookies = req.headers && req.headers.cookie ? Cookie.parse(req.headers.cookie) : {}
+        localeCode = cookies[cookieKey]
+      })
     }
 
     if (localeCode && localeCodes.includes(localeCode)) {
@@ -206,16 +207,20 @@ export function setLocaleCookie (locale, res, { useCookie, cookieDomain, cookieK
 
   if (process.client) {
     // @ts-ignore
-    JsCookie.set(cookieKey, locale, cookieOptions)
+    import('js-cookie').then(JsCookie => {
+      JsCookie.set(cookieKey, locale, cookieOptions)
+    })
   } else if (res) {
-    let headers = res.getHeader('Set-Cookie') || []
-    if (!Array.isArray(headers)) {
-      headers = [String(headers)]
-    }
+    import('cookie').then(Cookie => {
+      let headers = res.getHeader('Set-Cookie') || []
+      if (!Array.isArray(headers)) {
+        headers = [String(headers)]
+      }
 
-    const redirectCookie = Cookie.serialize(cookieKey, locale, cookieOptions)
-    headers.push(redirectCookie)
+      const redirectCookie = Cookie.serialize(cookieKey, locale, cookieOptions)
+      headers.push(redirectCookie)
 
-    res.setHeader('Set-Cookie', headers)
+      res.setHeader('Set-Cookie', headers)
+    })
   }
 }
