@@ -1,21 +1,11 @@
 import Vue from 'vue'
 import VueI18n from 'vue-i18n'
-import { nuxtI18nHead, nuxtI18nSeo } from './head-meta'
-import { Constants, nuxtOptions, options } from './options'
-import {
-  createLocaleFromRouteGetter,
-  getLocaleCookie,
-  getLocaleDomain,
-  getLocalesRegex,
-  matchBrowserLocale,
-  parseAcceptLanguage,
-  setLocaleCookie
-} from './utils-common'
-import { loadLanguageAsync, resolveBaseUrl, registerStore, syncVuex } from './plugin.utils'
-// @ts-ignore
-import { joinURL } from '~i18n-ufo'
-// @ts-ignore
+import { isEqual as isURLEqual, joinURL } from '~i18n-ufo'
 import { klona } from '~i18n-klona'
+import { nuxtI18nHead } from './head-meta'
+import { Constants, nuxtOptions, options } from './options'
+import { createLocaleFromRouteGetter, getLocaleCookie, getLocaleDomain, getLocalesRegex, matchBrowserLocale, parseAcceptLanguage, setLocaleCookie } from './utils-common'
+import { loadLanguageAsync, resolveBaseUrl, registerStore, mergeAdditionalMessages } from './plugin.utils'
 
 Vue.use(VueI18n)
 
@@ -55,14 +45,19 @@ export default async (context) => {
   const {
     alwaysRedirect,
     fallbackLocale,
-    onlyOnNoPrefix,
-    onlyOnRoot,
+    redirectOn,
     useCookie,
+    cookieAge,
     cookieKey,
     cookieDomain,
     cookieSecure,
     cookieCrossOrigin
   } = /** @type {Required<import('../../types').DetectBrowserLanguageOptions>} */(options.detectBrowserLanguage)
+
+  const getLocaleFromRoute = createLocaleFromRouteGetter(options.localeCodes, {
+    routesNameSeparator: options.routesNameSeparator,
+    defaultLocaleRouteNameSuffix: options.defaultLocaleRouteNameSuffix
+  })
 
   /**
    * @param {string | undefined} newLocale
@@ -90,10 +85,6 @@ export default async (context) => {
         return
       }
       newLocale = localeOverride
-    }
-
-    if (!initialSetup) {
-      app.i18n.beforeLanguageSwitch(oldLocale, newLocale)
     }
 
     if (useCookie) {
@@ -127,6 +118,8 @@ export default async (context) => {
         // Load all locales.
         await Promise.all(options.localeCodes.map(locale => loadLanguageAsync(context, locale)))
       }
+    } else {
+      mergeAdditionalMessages(app.i18n, options.additionalMessages, options.localeCodes)
     }
 
     app.i18n.locale = newLocale
@@ -141,13 +134,27 @@ export default async (context) => {
       Vue.set(app.i18n.localeProperties, key, klona(value))
     }
 
-    if (options.vuex) {
-      await syncVuex(store, newLocale, app.i18n.getLocaleMessage(newLocale), options.vuex)
-    }
-
     // Must retrieve from context as it might have changed since plugin initialization.
     const { route } = context
-    const redirectPath = getRedirectPathForLocale(route, newLocale)
+    let redirectPath = ''
+
+    const isStaticGenerate = process.static && process.server
+    // Decide whether we should redirect to a different route.
+    if (
+      !isStaticGenerate &&
+      !app.i18n.differentDomains &&
+      options.strategy !== Constants.STRATEGIES.NO_PREFIX &&
+      // Skip if already on the new locale unless the strategy is "prefix_and_default" and this is the default
+      // locale, in which case we might still redirect as we prefer unprefixed route in this case.
+      (getLocaleFromRoute(route) !== newLocale || (options.strategy === Constants.STRATEGIES.PREFIX_AND_DEFAULT && newLocale === options.defaultLocale))
+    ) {
+      // The current route could be 404 in which case attempt to find matching route using the full path since
+      // "switchLocalePath" can only find routes if the current route exists.
+      const routePath = app.switchLocalePath(newLocale) || app.localePath(route.fullPath, newLocale)
+      if (routePath && !isURLEqual(routePath, route.fullPath) && !routePath.startsWith('//')) {
+        redirectPath = routePath
+      }
+    }
 
     if (initialSetup) {
       // Redirect will be delayed until middleware runs as redirecting from plugin does not
@@ -160,51 +167,6 @@ export default async (context) => {
         redirect(redirectPath)
       }
     }
-  }
-
-  const getLocaleFromRoute = createLocaleFromRouteGetter(options.localeCodes, {
-    routesNameSeparator: options.routesNameSeparator,
-    defaultLocaleRouteNameSuffix: options.defaultLocaleRouteNameSuffix
-  })
-
-  /**
-   * Gets the redirect path for locale.
-   *
-   * @param {import("vue-router").Route} route
-   * @param {string | undefined} locale
-   * @return {string} The redirect path for locale.
-   */
-  const getRedirectPathForLocale = (route, locale) => {
-    // Redirects are ignored if it is a nuxt generate.
-    if (process.static && process.server) {
-      return ''
-    }
-
-    if (!locale || app.i18n.differentDomains || options.strategy === Constants.STRATEGIES.NO_PREFIX) {
-      return ''
-    }
-
-    if (getLocaleFromRoute(route) === locale) {
-      // If "onlyOnRoot" or "onlyOnNoPrefix" is set and strategy is "prefix_and_default", prefer unprefixed route for
-      // default locale.
-      if (!(onlyOnRoot || onlyOnNoPrefix) || locale !== options.defaultLocale || options.strategy !== Constants.STRATEGIES.PREFIX_AND_DEFAULT) {
-        return ''
-      }
-    }
-
-    // At this point we are left with route that either has no or different locale.
-    let redirectPath = app.switchLocalePath(locale)
-
-    if (!redirectPath) {
-      // Current route could be 404 in which case attempt to find matching route for given locale.
-      redirectPath = app.localePath(route.fullPath, locale)
-    }
-
-    if (!redirectPath || redirectPath === route.fullPath || redirectPath.startsWith('//')) {
-      return ''
-    }
-
-    return redirectPath
   }
 
   /**
@@ -240,7 +202,8 @@ export default async (context) => {
 
     const finalLocale =
       (options.detectBrowserLanguage && doDetectBrowserLanguage(route)) ||
-      getLocaleFromRoute(route) || app.i18n.locale || app.i18n.defaultLocale || ''
+      (!options.differentDomains && options.strategy !== Constants.STRATEGIES.NO_PREFIX && getLocaleFromRoute(route)) ||
+      app.i18n.locale || app.i18n.defaultLocale || ''
 
     if (options.skipSettingLocaleOnNavigate) {
       app.i18n.__pendingLocale = finalLocale
@@ -291,11 +254,11 @@ export default async (context) => {
     }
 
     if (options.strategy !== Constants.STRATEGIES.NO_PREFIX) {
-      if (onlyOnRoot) {
+      if (redirectOn === Constants.REDIRECT_ON_OPTIONS.ROOT) {
         if (route.path !== '/') {
           return ''
         }
-      } else if (onlyOnNoPrefix) {
+      } else if (redirectOn === Constants.REDIRECT_ON_OPTIONS.NO_PREFIX) {
         if (!alwaysRedirect && route.path.match(getLocalesRegex(options.localeCodes))) {
           return ''
         }
@@ -324,7 +287,7 @@ export default async (context) => {
   }
 
   /**
-   * Extends the newly created vue-i18n instance with nuxt-i18n properties.
+   * Extends the newly created vue-i18n instance with @nuxtjs/i18n properties.
    *
    * @param {import('vue-i18n').IVueI18n} i18n
    */
@@ -334,10 +297,9 @@ export default async (context) => {
     i18n.localeProperties = Vue.observable(klona(options.normalizedLocales.find(l => l.code === i18n.locale) || { code: i18n.locale }))
     i18n.defaultLocale = options.defaultLocale
     i18n.differentDomains = options.differentDomains
-    i18n.beforeLanguageSwitch = options.beforeLanguageSwitch
     i18n.onBeforeLanguageSwitch = options.onBeforeLanguageSwitch
     i18n.onLanguageSwitched = options.onLanguageSwitched
-    i18n.setLocaleCookie = locale => setLocaleCookie(locale, res, { useCookie, cookieDomain, cookieKey, cookieSecure, cookieCrossOrigin })
+    i18n.setLocaleCookie = locale => setLocaleCookie(locale, res, { useCookie, cookieAge, cookieDomain, cookieKey, cookieSecure, cookieCrossOrigin })
     i18n.getLocaleCookie = () => getLocaleCookie(req, { useCookie, cookieKey, localeCodes: options.localeCodes })
     i18n.setLocale = (locale) => loadAndSetLocale(locale)
     i18n.getBrowserLocale = () => getBrowserLocale()
@@ -357,6 +319,25 @@ export default async (context) => {
   // Initialize locale and fallbackLocale as vue-i18n defaults those to 'en-US' if falsey
   app.i18n.locale = ''
   app.i18n.fallbackLocale = vueI18nOptions.fallbackLocale || ''
+
+  if (store) {
+    // Inject in store.
+    store.$i18n = app.i18n
+
+    if (store.state.localeDomains) {
+      for (const [index, locale] of options.normalizedLocales.entries()) {
+        const domain = store.state.localeDomains[locale.code]
+        if (domain) {
+          locale.domain = domain
+          const optionsLocale = options.locales[index]
+          if (typeof (optionsLocale) !== 'string') {
+            optionsLocale.domain = domain
+          }
+        }
+      }
+    }
+  }
+
   extendVueI18nInstance(app.i18n)
   const resolveBaseUrlOptions = {
     differentDomains: options.differentDomains,
@@ -365,31 +346,13 @@ export default async (context) => {
   app.i18n.__baseUrl = resolveBaseUrl(options.baseUrl, context, '', resolveBaseUrlOptions)
   app.i18n.__onNavigate = onNavigate
 
-  Vue.prototype.$nuxtI18nSeo = nuxtI18nSeo
   Vue.prototype.$nuxtI18nHead = nuxtI18nHead
-
-  if (store) {
-    // Inject in store.
-    store.$i18n = app.i18n
-
-    if (store.state.localeDomains) {
-      for (const locale of app.i18n.locales) {
-        if (typeof (locale) === 'string') {
-          continue
-        }
-        locale.domain = store.state.localeDomains[locale.code]
-      }
-    }
-  }
 
   /** @type {string | undefined} */
   let finalLocale = options.detectBrowserLanguage ? doDetectBrowserLanguage(route) : ''
 
   if (!finalLocale) {
-    const { vuex } = options
-    if (vuex && vuex.syncLocale && store && store.state[vuex.moduleName].locale !== '') {
-      finalLocale = store.state[vuex.moduleName].locale
-    } else if (app.i18n.differentDomains) {
+    if (app.i18n.differentDomains) {
       const domainLocale = getLocaleDomain(options.normalizedLocales, req)
       finalLocale = domainLocale
     } else if (options.strategy !== Constants.STRATEGIES.NO_PREFIX) {

@@ -4,6 +4,7 @@
     ":prHourlyLimit4",
     ":semanticCommitTypeAll(chore)"
   ],
+  "baseBranches": ["next"],
   "meteor": {
     "enabled": false
   },
@@ -12,6 +13,12 @@
     "commitMessageTopic": "{{prettyDepType}} {{depName}}"
   },
   "packageRules": [
+    {
+      "matchPackageNames": [
+        "node"
+      ],
+      "enabled": false
+    },
     {
       "groupName": "all non-major dependencies",
       "groupSlug": "all-minor-patch",

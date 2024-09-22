@@ -11,33 +11,35 @@ Check the [Nuxt.js documentation](https://nuxtjs.org/guides/configuration-glossa
 
 </alert>
 
-Add `nuxt-i18n` dependency to your project:
+Add `@nuxtjs/i18n` dependency to your project:
 
 <code-group>
   <code-block label="Yarn" active>
 
   ```bash
-  yarn add nuxt-i18n
+  yarn add @nuxtjs/i18n
   ```
 
   </code-block>
   <code-block label="NPM">
 
   ```bash
-  npm install nuxt-i18n
+  npm install @nuxtjs/i18n
   ```
 
   </code-block>
 </code-group>
 
-Then, add `nuxt-i18n` to the `modules` section of `nuxt.config.js`. You can use either of the following ways to specify the module options:
+Then, add `@nuxtjs/i18n` to the `modules` section in your `nuxt.config.js`. You can use either of the following ways to specify the module options:
 
 ```js {}[nuxt.config.js]
 {
   modules: [
-    'nuxt-i18n',
+    '@nuxtjs/i18n',
   ],
-  i18n: {},
+  i18n: {
+    /* module options */
+  },
 }
 ```
 
@@ -47,12 +49,14 @@ or
 {
   modules: [
     [
-      'nuxt-i18n',
+      '@nuxtjs/i18n',
       { /* module options */ }
     ]
   ],
 }
 ```
+
+The former approach has the benefit of having type-checking enabled if you have followed the [Typescript setup](#typescript).
 
 ## Typescript
 
@@ -63,7 +67,7 @@ If using typescript or running typescript language server to check the code (for
   "compilerOptions": {
     "types": [
       "@nuxt/types",
-      "nuxt-i18n",
+      "@nuxtjs/i18n",
     ]
   }
 }

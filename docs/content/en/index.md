@@ -13,6 +13,12 @@ features:
   - Storing current locale and messages with Vuex
 ---
 
+<alert type="info">
+
+This documentation is for the Nuxt 2 version of the module. For version compatible with Nuxt 3 see https://v8.i18n.nuxtjs.org/.
+
+</alert>
+
 <img src="/preview.png" class="light-img" />
 <img src="/preview-dark.png" class="dark-img" />
 

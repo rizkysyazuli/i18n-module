@@ -4,10 +4,10 @@ name: CI
 on:
   push:
     branches:
-    - master
+    - main
   pull_request:
     branches:
-    - master
+    - main
 
 jobs:
   build:
@@ -16,12 +16,12 @@ jobs:
       CI: true
     strategy:
       matrix:
-        node-version: [12.x, 14.x]
+        node-version: [14.x, 16.x]
     name: Use Node.js ${{ matrix.node-version }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Setup node
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node-version }}
       - name: yarn install
@@ -29,4 +29,6 @@ jobs:
       - name: Unittesting
         run: yarn test
       - name: Linting
+        # Only test on one version to avoid duplicate linter annotations.
+        if: ${{ matrix.node-version == '16.x' }}
         run: yarn lint

@@ -1,8 +1,7 @@
 import isHTTPS from 'is-https'
+import { hasProtocol } from '~i18n-ufo'
 import { localeMessages, options } from './options'
 import { formatMessage } from './utils-common'
-// @ts-ignore
-import { hasProtocol } from '~i18n-ufo'
 
 /** @typedef {import('../../types/internal').ResolvedOptions} ResolvedOptions */
 
@@ -46,11 +45,12 @@ export async function loadLanguageAsync (context, locale) {
             messages = typeof getter === 'function' ? await Promise.resolve(getter(context, locale)) : getter
           } catch (error) {
             // eslint-disable-next-line no-console
-            console.error(formatMessage(`Failed loading async locale export: ${error.message}`))
+            console.error(formatMessage(`Failed loading async locale export: ${/** @type {Error} */(error).message}`))
           }
         }
         if (messages) {
           i18n.setLocaleMessage(locale, messages)
+          mergeAdditionalMessages(i18n, options.additionalMessages, options.localeCodes, [locale])
           i18n.loadedLanguages.push(locale)
         }
         /* <% } %> */
@@ -133,25 +133,9 @@ export function registerStore (store, vuex, localeCodes) {
   const storeModule = {
     namespaced: true,
     state: () => ({
-      ...(vuex.syncLocale ? { locale: '' } : {}),
-      ...(vuex.syncMessages ? { messages: {} } : {}),
       ...(vuex.syncRouteParams ? { routeParams: {} } : {})
     }),
     actions: {
-      ...(vuex.syncLocale
-        ? {
-            setLocale ({ commit }, locale) {
-              commit('setLocale', locale)
-            }
-          }
-        : {}),
-      ...(vuex.syncMessages
-        ? {
-            setMessages ({ commit }, messages) {
-              commit('setMessages', messages)
-            }
-          }
-        : {}),
       ...(vuex.syncRouteParams
         ? {
             setRouteParams ({ commit }, params) {
@@ -164,20 +148,6 @@ export function registerStore (store, vuex, localeCodes) {
         : {})
     },
     mutations: {
-      ...(vuex.syncLocale
-        ? {
-            setLocale (state, locale) {
-              state.locale = locale
-            }
-          }
-        : {}),
-      ...(vuex.syncMessages
-        ? {
-            setMessages (state, messages) {
-              state.messages = messages
-            }
-          }
-        : {}),
       ...(vuex.syncRouteParams
         ? {
             setRouteParams (state, params) {
@@ -202,26 +172,6 @@ export function registerStore (store, vuex, localeCodes) {
 }
 
 /**
- * Dispatch store module actions to keep it in sync with app's locale data
- *
- * @param  {import('vuex').Store<void>} store
- * @param  {string | null} locale The current locale
- * @param  {object | null} messages Current messages
- * @param  {ResolvedOptions['vuex']} vuex
- * @return {Promise<void>}
- */
-export async function syncVuex (store, locale = null, messages = null, vuex) {
-  if (vuex && store) {
-    if (locale !== null && vuex.syncLocale) {
-      await store.dispatch(vuex.moduleName + '/setLocale', locale)
-    }
-    if (messages !== null && vuex.syncMessages) {
-      await store.dispatch(vuex.moduleName + '/setMessages', messages)
-    }
-  }
-}
-
-/**
  * Validate setRouteParams action's payload
  *
  * @param {object} routeParams The action's payload
@@ -241,6 +191,26 @@ export function validateRouteParams (routeParams, localeCodes) {
     } else if (!isObject(value)) {
     // eslint-disable-next-line no-console
       console.warn(formatMessage(`Trying to set route params for locale ${key} with a non-object value`))
+    }
+  }
+}
+
+/**
+ * Merge external additional messages
+ *
+ * @param {import('../../types').NuxtI18nInstance} i18n
+ * @param {ResolvedOptions['additionalMessages']} additionalMessages
+ * @param {ResolvedOptions['localeCodes']} localeCodes
+ * @param {string[] | null} [onlyLocales=null]
+ * @return {void}
+ */
+export function mergeAdditionalMessages (i18n, additionalMessages, localeCodes, onlyLocales) {
+  const locales = onlyLocales || localeCodes
+  for (const additionalEntry of additionalMessages) {
+    for (const locale of locales) {
+      const existingMessages = i18n.getLocaleMessage(locale)
+      i18n.mergeLocaleMessage(locale, additionalEntry[locale])
+      i18n.mergeLocaleMessage(locale, existingMessages)
     }
   }
 }

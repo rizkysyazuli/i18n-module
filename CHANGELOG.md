@@ -1,3 +1,114 @@
+
+
+### [7.3.1](https://github.com/nuxt-community/i18n-module/compare/v7.3.0...v7.3.1) (2023-01-09)
+
+
+### Bug Fixes
+
+* don't expose full project path throuh `langDir` option ([#1786](https://github.com/nuxt-community/i18n-module/issues/1786)) ([0738a0f](https://github.com/nuxt-community/i18n-module/commit/0738a0f4e1cf1758bb44d019642017c88e0b1685))
+
+## [7.3.0](https://github.com/nuxt-community/i18n-module/compare/v7.2.3...v7.3.0) (2022-08-24)
+
+
+### Features
+
+* add setting for setting expiration of the cookie that stores locale ([#1492](https://github.com/nuxt-community/i18n-module/issues/1492)) ([dd764d7](https://github.com/nuxt-community/i18n-module/commit/dd764d74f3e21640904889c981eb8eb8b4874e4a))
+
+### [7.2.3](https://github.com/nuxt-community/i18n-module/compare/v7.2.2...v7.2.3) (2022-08-01)
+
+
+### Bug Fixes
+
+* infinite redirect on URL with special characters ([#1472](https://github.com/nuxt-community/i18n-module/issues/1472)) ([426af76](https://github.com/nuxt-community/i18n-module/commit/426af769d5f55d9eeaa3078a8c244caa2d0a7b68))
+
+### [7.2.2](https://github.com/nuxt-community/i18n-module/compare/v7.2.1...v7.2.2) (2022-04-25)
+
+
+### Bug Fixes
+
+* fixed locale changing issue in server side middleware ([#1429](https://github.com/nuxt-community/i18n-module/issues/1429)) ([c10231d](https://github.com/nuxt-community/i18n-module/commit/c10231df0aab40ce8f72aca45730ab1d61464f7c))
+
+### [7.2.1](https://github.com/nuxt-community/i18n-module/compare/v7.2.0...v7.2.1) (2022-04-01)
+
+
+### Bug Fixes
+
+* don't detect locale from route when using no_prefix ([#1421](https://github.com/nuxt-community/i18n-module/issues/1421)) ([609782f](https://github.com/nuxt-community/i18n-module/commit/609782f49c93b889b4f2494f5d21a16f96fc5ac9))
+* **docs:** add info on using dynamic translations with _.vue ([b6039d2](https://github.com/nuxt-community/i18n-module/commit/b6039d2215945319fdbd1acf8dc981cc55c3bc8d)), closes [#1400](https://github.com/nuxt-community/i18n-module/issues/1400)
+* **docs:** correct links to [Custom paths] and [Ignore routes] ([#1392](https://github.com/nuxt-community/i18n-module/issues/1392)) ([091944c](https://github.com/nuxt-community/i18n-module/commit/091944cec97c13a7192dcd5b6650cc8ecd348a1e))
+* **parse-pages:** add jsx plugin for .vue files using jsx syntax ([#1356](https://github.com/nuxt-community/i18n-module/issues/1356)) ([8cdb999](https://github.com/nuxt-community/i18n-module/commit/8cdb99917c021492ec8208eeecec7b01dd1b4ce5))## [7.2.0](https://github.com/nuxt-community/i18n-module/compare/v7.1.0...v7.2.0) (2021-11-04)
+
+
+### Features
+
+* expose hook for extending messages ([#1319](https://github.com/nuxt-community/i18n-module/issues/1319)) ([696bd12](https://github.com/nuxt-community/i18n-module/commit/696bd1260d731feade80eaa0ad8ff0febe53f3a7))
+
+
+### Bug Fixes
+
+* **docs:** refactor and separate some pages related to routing ([89eb12f](https://github.com/nuxt-community/i18n-module/commit/89eb12f54dd44088d0718c30756774c24fcb25d9))
+* load vue-template-compiler with nuxt.resolver.requireModule ([#1327](https://github.com/nuxt-community/i18n-module/issues/1327)) ([c5a3ca8](https://github.com/nuxt-community/i18n-module/commit/c5a3ca861e36ff9602d34c20321667676025af8b))
+
+## [7.1.0](https://github.com/nuxt-community/i18n-module/compare/v7.0.3...v7.1.0) (2021-10-19)
+
+
+### Features
+
+* add support for query params in canonical url ([#1274](https://github.com/nuxt-community/i18n-module/issues/1274)) ([d5dea9c](https://github.com/nuxt-community/i18n-module/commit/d5dea9c6a047e5e25a13904c3a2cb8ffa4fdf089))
+
+
+### Bug Fixes
+
+* adjust strange redirection logic for prefix_and_default ([#1304](https://github.com/nuxt-community/i18n-module/issues/1304)) ([578acd8](https://github.com/nuxt-community/i18n-module/commit/578acd8ce506991aa02f8b7b1b81e364df1d7063))
+
+### [7.0.3](https://github.com/nuxt-community/i18n-module/compare/v7.0.2...v7.0.3) (2021-08-31)
+
+
+### Bug Fixes
+
+* crash on using $nuxtI18nHead from nuxt.config's head ([#1273](https://github.com/nuxt-community/i18n-module/issues/1273)) ([b4aae9d](https://github.com/nuxt-community/i18n-module/commit/b4aae9dc748c2cee4d4c0b4ff9bb67b61a01969f)), closes [#1266](https://github.com/nuxt-community/i18n-module/issues/1266)
+
+### [7.0.2](https://github.com/nuxt-community/i18n-module/compare/v7.0.1...v7.0.2) (2021-08-12)
+
+
+### Bug Fixes
+
+* **differentDomains:** handling of runtime domains from store ([#1183](https://github.com/nuxt-community/i18n-module/issues/1183)) ([4d77019](https://github.com/nuxt-community/i18n-module/commit/4d77019f786086b9e496661f8c8d55893556e31d))
+
+### [7.0.1](https://github.com/nuxt-community/i18n-module/compare/v7.0.0...v7.0.1) (2021-08-05)
+
+
+### Bug Fixes
+
+* return the redirect path when resolving redirects with localePath ([#1253](https://github.com/nuxt-community/i18n-module/issues/1253)) ([3538f77](https://github.com/nuxt-community/i18n-module/commit/3538f77303e52e4f7aa710c24b9a371421c34deb)), closes [#1248](https://github.com/nuxt-community/i18n-module/issues/1248)
+
+## [7.0.0](https://github.com/nuxt-community/i18n-module/compare/v6.28.1...v7.0.0) (2021-08-03)
+
+
+### ⚠ BREAKING CHANGES
+
+* rename package to @nuxtjs/i18n
+* set redirectOn to root by default (#1244)
+* remove vuex syncLocale & vuex syncMessages (#1240)
+* disable addDirAttribute by default (#1239)
+* replace onlyOnNoPrefix and onlyOnRoot with redirectOn (#1210)
+* remove deprecated seo option (#1232)
+* remove deprecated $nuxtI18nSeo (#1207)
+* **types:** remove deprecated NuxtVueI18n (#1206)
+* remove deprecated beforeLanguageSwitch (#1200)
+
+### Code Refactoring
+
+* disable addDirAttribute by default ([#1239](https://github.com/nuxt-community/i18n-module/issues/1239)) ([eac6130](https://github.com/nuxt-community/i18n-module/commit/eac613061c7889766221524ef8a9c5772d4e915f))
+* remove deprecated $nuxtI18nSeo ([#1207](https://github.com/nuxt-community/i18n-module/issues/1207)) ([d8134a3](https://github.com/nuxt-community/i18n-module/commit/d8134a31272ba564ae57988db0221780044b475d))
+* remove deprecated beforeLanguageSwitch ([#1200](https://github.com/nuxt-community/i18n-module/issues/1200)) ([d591662](https://github.com/nuxt-community/i18n-module/commit/d5916624285254f1247a835626f9a5d21b4acd79))
+* remove deprecated seo option ([#1232](https://github.com/nuxt-community/i18n-module/issues/1232)) ([bedf2b8](https://github.com/nuxt-community/i18n-module/commit/bedf2b8d649828aaea8a78e064a55a7977113314))
+* remove vuex syncLocale & vuex syncMessages ([#1240](https://github.com/nuxt-community/i18n-module/issues/1240)) ([399f1a3](https://github.com/nuxt-community/i18n-module/commit/399f1a3f15c0298c53ca2a02256eb71cfd6c3031))
+* rename package to @nuxtjs/i18n ([b3ef21c](https://github.com/nuxt-community/i18n-module/commit/b3ef21c9947acc8e73d2b971fdccd77b9765a96f))
+* replace onlyOnNoPrefix and onlyOnRoot with redirectOn ([#1210](https://github.com/nuxt-community/i18n-module/issues/1210)) ([2eb955a](https://github.com/nuxt-community/i18n-module/commit/2eb955ac57362bba72bd2171a4d37fda2be840d5))
+* set redirectOn to root by default ([#1244](https://github.com/nuxt-community/i18n-module/issues/1244)) ([956df98](https://github.com/nuxt-community/i18n-module/commit/956df98275e7dfc3388787794502c0c25aaa10a8))
+* **types:** remove deprecated NuxtVueI18n ([#1206](https://github.com/nuxt-community/i18n-module/issues/1206)) ([e96688c](https://github.com/nuxt-community/i18n-module/commit/e96688c2aba87bbc2318cc348264ac63febe4d53))
+
 ### [6.28.1](https://github.com/nuxt-community/i18n-module/compare/v6.28.0...v6.28.1) (2021-08-03)
 
 

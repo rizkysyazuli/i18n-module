@@ -93,7 +93,6 @@ describe(browserString, () => {
     testData = await getTestData()
     expect(testData.languageSwitchedListeners).toEqual([
       {
-        storeLocale: 'fr',
         newLocale: 'fr',
         oldLocale: 'en'
       }
@@ -113,7 +112,6 @@ describe(browserString, () => {
     testData = await getTestData()
     expect(testData.languageSwitchedListeners).toEqual([
       {
-        storeLocale: 'fr',
         newLocale: 'fr',
         oldLocale: 'en'
       }
@@ -225,7 +223,7 @@ for (const target of ['server', 'static']) {
   })
 }
 
-describe(`${browserString} (generate, with router base)`, () => {
+describe(`${browserString} (generate, with router base) + redirectOn is root`, () => {
   /** @type {import('playwright-chromium').ChromiumBrowser} */
   let browser
   /** @type {import('playwright-chromium').Page} */
@@ -272,7 +270,99 @@ describe(`${browserString} (generate, with router base)`, () => {
     page = await browser.newPage({ locale: 'fr' })
     await page.goto(server.getUrl('/'))
     // Trailing slash added by the server.
-    expect(page.url()).toBe(server.getUrl('/fr'))
+    expect(page.url()).toBe(server.getUrl('/fr/'))
+    // Need to delay a bit due to vue-meta batching with 10ms timeout.
+    await page.waitForTimeout(20)
+    expect(await page.title()).toBe('Accueil')
+
+    await navigate(page, '/')
+    await page.waitForTimeout(20)
+    expect(await page.title()).toBe('Homepage')
+  })
+
+  test('reactivity works after redirecting to locale (sub-path)', async () => {
+    page = await browser.newPage({ locale: 'fr' })
+    await page.goto(server.getUrl('/posts/'))
+    expect(page.url()).toBe(server.getUrl('/posts/'))
+    // Need to delay a bit due to vue-meta batching with 10ms timeout.
+    await page.waitForTimeout(20)
+    expect(await page.title()).toBe('Posts')
+
+    await navigate(page, '/fr/articles/')
+    await page.waitForTimeout(20)
+    expect(await page.title()).toBe('Articles')
+  })
+
+  test('localePath returns correct path', async () => {
+    page = await browser.newPage()
+    await page.goto(server.getUrl('/'))
+    /**
+     * @param {string} route
+     * @param {string | undefined} [locale]
+     */
+    const localePath = async (route, locale) => {
+      // @ts-ignore
+      return await page.evaluate(args => window.$nuxt.localePath(...args), [route, locale])
+    }
+    expect(await localePath('about')).toBe('/about-us')
+    expect(await localePath('about', 'fr')).toBe('/fr/a-propos')
+    expect(await localePath('/about-us')).toBe('/about-us')
+  })
+})
+
+describe(`${browserString} (generate, with router base) + redirectOn is all`, () => {
+  /** @type {import('playwright-chromium').ChromiumBrowser} */
+  let browser
+  /** @type {import('playwright-chromium').Page} */
+  let page
+  /** @type {import('./utils').StaticServer} */
+  let server
+
+  beforeAll(async () => {
+    const base = '/nuxt/'
+    const distDir = resolve(__dirname, 'fixture', 'basic', '.nuxt-generate')
+    const overrides = {
+      generate: { dir: distDir },
+      router: { base },
+      i18n: {
+        detectBrowserLanguage: {
+          redirectOn: 'all'
+        }
+      }
+    }
+    await generate(loadConfig(__dirname, 'basic', overrides, { merge: true }))
+    server = await startHttpServer({ path: distDir, base, verbose: true })
+    browser = await createBrowser()
+  })
+
+  afterAll(async () => {
+    if (server) {
+      await server.destroy()
+    }
+    if (browser) {
+      await browser.close()
+    }
+  })
+
+  // Issue https://github.com/nuxt-community/i18n-module/issues/378
+  test('navigate to non-default locale', async () => {
+    page = await browser.newPage()
+    await page.goto(server.getUrl('/'))
+    expect(await (await page.$('body'))?.textContent()).toContain('locale: en')
+
+    await navigate(page, '/fr')
+    expect(await (await page.$('body'))?.textContent()).toContain('locale: fr')
+
+    await navigate(page, '/')
+    expect(await (await page.$('body'))?.textContent()).toContain('locale: en')
+  })
+
+  // Issue https://github.com/nuxt-community/i18n-module/issues/737
+  test('reactivity works after redirecting to detected browser locale (root path)', async () => {
+    page = await browser.newPage({ locale: 'fr' })
+    await page.goto(server.getUrl('/'))
+    // Trailing slash added by the server.
+    expect(page.url()).toBe(server.getUrl('/fr/'))
     // Need to delay a bit due to vue-meta batching with 10ms timeout.
     await page.waitForTimeout(20)
     expect(await page.title()).toBe('Accueil')
@@ -312,7 +402,7 @@ describe(`${browserString} (generate, with router base)`, () => {
   })
 })
 
-describe(`${browserString} (generate, no subFolders, trailingSlash === false)`, () => {
+describe(`${browserString} (generate, no subFolders, trailingSlash === false) + redirectOn is root`, () => {
   /** @type {import('playwright-chromium').ChromiumBrowser} */
   let browser
   /** @type {import('playwright-chromium').Page} */
@@ -370,6 +460,83 @@ describe(`${browserString} (generate, no subFolders, trailingSlash === false)`, 
     expect(await page.title()).toBe('Homepage')
   })
 
+  test('reactivity works after redirecting to locale (sub-path)', async () => {
+    page = await browser.newPage({ locale: 'fr' })
+    await page.goto(server.getUrl('/dynamicNested'))
+    expect(page.url()).toBe(server.getUrl('/dynamicNested'))
+    // Need to delay a bit due to vue-meta batching with 10ms timeout.
+    await page.waitForTimeout(20)
+    expect(await page.title()).toBe('Dynamic')
+
+    await navigate(page, '/fr/imbrication-dynamique')
+    await page.waitForTimeout(20)
+    expect(await page.title()).toBe('Dynamique')
+  })
+})
+
+describe(`${browserString} (generate, no subFolders, trailingSlash === false) + redirectOn is all`, () => {
+  /** @type {import('playwright-chromium').ChromiumBrowser} */
+  let browser
+  /** @type {import('playwright-chromium').Page} */
+  let page
+  /** @type {import('./utils').StaticServer} */
+  let server
+
+  beforeAll(async () => {
+    const distDir = resolve(__dirname, 'fixture', 'basic', '.nuxt-generate')
+    const overrides = {
+      generate: {
+        dir: distDir,
+        subFolders: false
+      },
+      router: {
+        trailingSlash: false
+      },
+      i18n: {
+        detectBrowserLanguage: {
+          redirectOn: 'all'
+        }
+      }
+    }
+    await generate(loadConfig(__dirname, 'basic', overrides, { merge: true }))
+    server = await startHttpServer({ path: distDir, noTrailingSlashRedirect: true, verbose: true })
+    browser = await createBrowser()
+  })
+
+  afterAll(async () => {
+    if (server) {
+      await server.destroy()
+    }
+    if (browser) {
+      await browser.close()
+    }
+  })
+
+  test('navigate to non-default locale', async () => {
+    page = await browser.newPage()
+    await page.goto(server.getUrl('/'))
+    expect(await (await page.$('body'))?.textContent()).toContain('locale: en')
+
+    await navigate(page, '/fr')
+    expect(await (await page.$('body'))?.textContent()).toContain('locale: fr')
+
+    await navigate(page, '/')
+    expect(await (await page.$('body'))?.textContent()).toContain('locale: en')
+  })
+
+  test('reactivity works after redirecting to detected browser locale (root path)', async () => {
+    page = await browser.newPage({ locale: 'fr' })
+    await page.goto(server.getUrl('/'))
+    expect(page.url()).toBe(server.getUrl('/fr'))
+    // Need to delay a bit due to vue-meta batching with 10ms timeout.
+    await page.waitForTimeout(20)
+    expect(await page.title()).toBe('Accueil')
+
+    await navigate(page, '/')
+    await page.waitForTimeout(20)
+    expect(await page.title()).toBe('Homepage')
+  })
+
   test('reactivity works after redirecting to detected browser locale (sub-path)', async () => {
     page = await browser.newPage({ locale: 'fr' })
     await page.goto(server.getUrl('/dynamicNested'))
@@ -385,7 +552,7 @@ describe(`${browserString} (generate, no subFolders, trailingSlash === false)`, 
 })
 
 for (const target of ['server', 'static']) {
-  describe(`${browserString} (target ${target}, generate, prefix strategy, alwaysRedirect, onlyOnRoot)`, () => {
+  describe(`${browserString} (target ${target}, generate, prefix strategy, alwaysRedirect, redirectOn is root)`, () => {
     /** @type {import('playwright-chromium').ChromiumBrowser} */
     let browser
     /** @type {import('playwright-chromium').Page} */
@@ -403,7 +570,7 @@ for (const target of ['server', 'static']) {
           detectBrowserLanguage: {
             alwaysRedirect: true,
             fallbackLocale: 'en',
-            onlyOnRoot: true
+            redirectOn: 'root'
           }
         }
       }
@@ -435,11 +602,11 @@ for (const target of ['server', 'static']) {
     test('redirects to saved locale on re-visiting the root path', async () => {
       page = await browser.newPage()
       await page.goto(server.getUrl('/fr'))
-      expect(page.url()).toBe(server.getUrl('/fr'))
+      expect(page.url()).toBe(server.getUrl('/fr/'))
       expect(await (await page.$('body'))?.textContent()).toContain('locale: fr')
 
       await page.goto(server.getUrl('/'))
-      expect(page.url()).toBe(server.getUrl('/fr'))
+      expect(page.url()).toBe(server.getUrl('/fr/'))
       expect(await (await page.$('body'))?.textContent()).toContain('locale: fr')
     })
   })
@@ -492,7 +659,7 @@ describe(`${browserString} (generate with detectBrowserLanguage.fallbackLocale)`
   test('redirects to browser locale', async () => {
     page = await browser.newPage({ locale: 'fr' })
     await page.goto(server.getUrl('/'))
-    expect(page.url()).toBe(server.getUrl('/fr'))
+    expect(page.url()).toBe(server.getUrl('/fr/'))
     expect(await (await page.$('body'))?.textContent()).toContain('locale: fr')
   })
 })
@@ -968,7 +1135,7 @@ describe(`${browserString} (SPA with router in hash mode)`, () => {
   })
 })
 
-describe(`${browserString} (onlyOnRoot + alwaysRedirect + no_prefix)`, () => {
+describe(`${browserString} (redirectOn is root + alwaysRedirect + no_prefix)`, () => {
   /** @type {Nuxt} */
   let nuxt
   /** @type {import('playwright-chromium').ChromiumBrowser} */
@@ -982,7 +1149,7 @@ describe(`${browserString} (onlyOnRoot + alwaysRedirect + no_prefix)`, () => {
         detectBrowserLanguage: {
           useCookie: false,
           alwaysRedirect: true,
-          onlyOnRoot: true
+          redirectOn: 'root'
         }
       }
     }
@@ -998,13 +1165,13 @@ describe(`${browserString} (onlyOnRoot + alwaysRedirect + no_prefix)`, () => {
     await nuxt.close()
   })
 
-  test('onlyOnRoot does not affect locale detection on root path', async () => {
+  test('redirectOn is root does not affect locale detection on root path', async () => {
     const page = await browser.newPage({ locale: 'fr' })
     await page.goto(url('/'))
     expect(await (await page.$('body'))?.textContent()).toContain('locale: fr')
   })
 
-  test('onlyOnRoot does not affect locale detection on sub-path', async () => {
+  test('redirectOn is root does not affect locale detection on sub-path', async () => {
     const page = await browser.newPage({ locale: 'fr' })
     await page.goto(url('/about'))
     expect(await (await page.$('#current-page'))?.textContent()).toContain('page: À propos')
@@ -1059,7 +1226,7 @@ describe(`${browserString} (alwaysRedirect, prefix)`, () => {
   })
 })
 
-describe(`${browserString} (onlyOnRoot + prefix_except_default)`, () => {
+describe(`${browserString} (redirectOn is root + prefix_except_default)`, () => {
   /** @type {Nuxt} */
   let nuxt
   /** @type {import('playwright-chromium').ChromiumBrowser} */
@@ -1071,7 +1238,7 @@ describe(`${browserString} (onlyOnRoot + prefix_except_default)`, () => {
         defaultLocale: 'en',
         strategy: 'prefix_except_default',
         detectBrowserLanguage: {
-          onlyOnRoot: true
+          redirectOn: 'root'
         }
       }
     }
@@ -1104,8 +1271,7 @@ describe(`${browserString} (onlyOnRoot + prefix_except_default)`, () => {
     const page = await browser.newPage({ locale: 'en' })
     await page.goto(url('/fr/'))
     expect(await (await page.$('#current-page'))?.textContent()).toContain('page: Accueil')
-    // Nuxt implicitly normalizes the trailing slash on initial reloading by calling router.replace(route).
-    expect(await getRouteFullPath(page)).toBe('/fr')
+    expect(await getRouteFullPath(page)).toBe('/fr/')
   })
 
   test('does not detect locale and redirect on prefixed, non-root path', async () => {
@@ -1131,7 +1297,7 @@ describe(`${browserString} (onlyOnRoot + prefix_except_default)`, () => {
   })
 })
 
-describe(`${browserString} (onlyOnRoot + alwaysRedirect + prefix_except_default)`, () => {
+describe(`${browserString} (redirectOn is root + alwaysRedirect + prefix_except_default)`, () => {
   /** @type {Nuxt} */
   let nuxt
   /** @type {import('playwright-chromium').ChromiumBrowser} */
@@ -1144,7 +1310,7 @@ describe(`${browserString} (onlyOnRoot + alwaysRedirect + prefix_except_default)
         strategy: 'prefix_except_default',
         detectBrowserLanguage: {
           alwaysRedirect: true,
-          onlyOnRoot: true
+          redirectOn: 'root'
         }
       }
     }
@@ -1176,7 +1342,7 @@ describe(`${browserString} (onlyOnRoot + alwaysRedirect + prefix_except_default)
   })
 })
 
-describe(`${browserString} (onlyOnRoot + prefix_and_default)`, () => {
+describe(`${browserString} (redirectOn is root + prefix_and_default)`, () => {
   /** @type {Nuxt} */
   let nuxt
   /** @type {import('playwright-chromium').ChromiumBrowser} */
@@ -1188,7 +1354,7 @@ describe(`${browserString} (onlyOnRoot + prefix_and_default)`, () => {
         defaultLocale: 'en',
         strategy: 'prefix_and_default',
         detectBrowserLanguage: {
-          onlyOnRoot: true
+          redirectOn: 'root'
         }
       }
     }
@@ -1219,7 +1385,7 @@ describe(`${browserString} (onlyOnRoot + prefix_and_default)`, () => {
   })
 })
 
-describe(`${browserString} (onlyOnRoot + prefix)`, () => {
+describe(`${browserString} (redirectOn is root + prefix)`, () => {
   /** @type {Nuxt} */
   let nuxt
   /** @type {import('playwright-chromium').ChromiumBrowser} */
@@ -1231,7 +1397,7 @@ describe(`${browserString} (onlyOnRoot + prefix)`, () => {
         defaultLocale: 'en',
         strategy: 'prefix',
         detectBrowserLanguage: {
-          onlyOnRoot: true
+          redirectOn: 'root'
         }
       }
     }
@@ -1325,7 +1491,6 @@ describe('differentDomains', () => {
       i18n: {
         detectBrowserLanguage: false,
         differentDomains: true,
-        seo: false,
         vuex: false
       }
     }

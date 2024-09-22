@@ -2,16 +2,15 @@ import VueI18n, { Locale, I18nOptions, IVueI18n } from 'vue-i18n'
 import { Context as NuxtContext } from '@nuxt/types'
 import './vue'
 
-// Deprecated
-export { NuxtVueI18n } from './nuxt-i18n'
-
 export { Locale }
 export type Strategies = 'no_prefix' | 'prefix_except_default' | 'prefix' | 'prefix_and_default'
 export type Directions = 'ltr' | 'rtl' | 'auto'
+export type RedirectOnOptions = 'all' | 'root' | 'no prefix'
 
 export interface LocaleObject extends Record<string, any> {
   code: Locale
   dir?: Directions
+  domain?: string
   file?: string
   isCatchallLocale?: boolean
   iso?: string
@@ -19,13 +18,13 @@ export interface LocaleObject extends Record<string, any> {
 
 export interface DetectBrowserLanguageOptions {
   alwaysRedirect?: boolean
+  cookieAge?: number
   cookieCrossOrigin?: boolean
   cookieDomain?: string | null
   cookieKey?: string
   cookieSecure?: boolean
   fallbackLocale?: Locale | null
-  onlyOnNoPrefix?: boolean
-  onlyOnRoot?: boolean
+  redirectOn?: RedirectOnOptions
   useCookie?: boolean
 }
 
@@ -36,8 +35,6 @@ export interface RootRedirectOptions {
 
 export interface VuexOptions {
   moduleName?: string
-  syncLocale?: boolean
-  syncMessages?: boolean
   syncRouteParams?: boolean
 }
 
@@ -47,8 +44,6 @@ export interface LazyOptions {
 
 // Options that are also exposed on the VueI18n instance.
 export interface BaseOptions {
-  /** @deprecated Use `onBeforeLanguageSwitch` instead */
-  beforeLanguageSwitch?: (oldLocale: string, newLocale: string) => void
   defaultDirection?: Directions
   defaultLocale?: Locale
   defaultLocaleRouteNameSuffix?: string
@@ -71,7 +66,6 @@ export interface Options extends BaseOptions {
   parsePages?: boolean
   rootRedirect?: string | null | RootRedirectOptions
   routesNameSeparator?: string
-  seo?: boolean
   skipSettingLocaleOnNavigate?: boolean,
   sortRoutes?: boolean,
   strategy?: Strategies

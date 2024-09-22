@@ -6,8 +6,8 @@
  * @param {string} text
  * @return {string}
  */
-export function formatMessage (text) {
-  return `[nuxt-i18n] ${text}`
+export function formatMessage(text) {
+  return `[@nuxtjs/i18n] ${text}`;
 }
 
 /**
@@ -16,13 +16,13 @@ export function formatMessage (text) {
  * @param {string} input
  * @return {string[]} An array of locale codes. Priority determined by order in array.
  */
-export function parseAcceptLanguage (input) {
+export function parseAcceptLanguage(input) {
   // Example input: en-US,en;q=0.9,nb;q=0.8,no;q=0.7
   // Contains tags separated by comma.
   // Each tag consists of locale code (2-3 letter language code) and optionally country code
   // after dash. Tag can also contain score after semicolon, that is assumed to match order
   // so it's not explicitly used.
-  return input.split(',').map(tag => tag.split(';')[0])
+  return input.split(",").map((tag) => tag.split(";")[0]);
 }
 
 /**
@@ -32,36 +32,46 @@ export function parseAcceptLanguage (input) {
  * @param {readonly string[]} browserLocales The locales to match against configured.
  * @return {string | undefined}
  */
-export function matchBrowserLocale (appLocales, browserLocales) {
+export function matchBrowserLocale(appLocales, browserLocales) {
   /** @type {{ code: string, score: number }[]} */
-  const matchedLocales = []
+  const matchedLocales = [];
 
   // Normalise appLocales input
   /** @type {{ code: string, iso: string }[]} */
-  const normalizedAppLocales = []
+  const normalizedAppLocales = [];
   for (const appLocale of appLocales) {
-    const { code } = appLocale
-    const iso = appLocale.iso || code
-    normalizedAppLocales.push({ code, iso })
+    const { code } = appLocale;
+    const iso = appLocale.iso || code;
+    normalizedAppLocales.push({ code, iso });
   }
 
   // First pass: match exact locale.
   for (const [index, browserCode] of browserLocales.entries()) {
-    const matchedLocale = normalizedAppLocales.find(appLocale => appLocale.iso.toLowerCase() === browserCode.toLowerCase())
+    const matchedLocale = normalizedAppLocales.find(
+      (appLocale) => appLocale.iso.toLowerCase() === browserCode.toLowerCase()
+    );
     if (matchedLocale) {
-      matchedLocales.push({ code: matchedLocale.code, score: 1 - index / browserLocales.length })
-      break
+      matchedLocales.push({
+        code: matchedLocale.code,
+        score: 1 - index / browserLocales.length,
+      });
+      break;
     }
   }
 
   // Second pass: match only locale code part of the browser locale (not including country).
   for (const [index, browserCode] of browserLocales.entries()) {
-    const languageCode = browserCode.split('-')[0].toLowerCase()
-    const matchedLocale = normalizedAppLocales.find(appLocale => appLocale.iso.split('-')[0].toLowerCase() === languageCode)
+    const languageCode = browserCode.split("-")[0].toLowerCase();
+    const matchedLocale = normalizedAppLocales.find(
+      (appLocale) => appLocale.iso.split("-")[0].toLowerCase() === languageCode
+    );
     if (matchedLocale) {
       // Deduct a thousandth for being non-exact match.
-      matchedLocales.push({ code: matchedLocale.code, score: 0.999 - index / browserLocales.length })
-      break
+      matchedLocales.push({
+        code: matchedLocale.code,
+        score: 0.999 - index / browserLocales.length,
+      });
+      break;
     }
   }
 
@@ -70,14 +80,14 @@ export function matchBrowserLocale (appLocales, browserLocales) {
     matchedLocales.sort((localeA, localeB) => {
       if (localeA.score === localeB.score) {
         // If scores are equal then pick more specific (longer) code.
-        return localeB.code.length - localeA.code.length
+        return localeB.code.length - localeA.code.length;
       }
 
-      return localeB.score - localeA.score
-    })
+      return localeB.score - localeA.score;
+    });
   }
 
-  return matchedLocales.length ? matchedLocales[0].code : undefined
+  return matchedLocales.length ? matchedLocales[0].code : undefined;
 }
 
 /**
@@ -87,25 +97,25 @@ export function matchBrowserLocale (appLocales, browserLocales) {
  * @param  {import('http').IncomingMessage | undefined} req
  * @return {string} Locale code found if any
  */
-export function getLocaleDomain (locales, req) {
+export function getLocaleDomain(locales, req) {
   /** @type {string | undefined} */
-  let host
+  let host;
 
   if (process.client) {
-    host = window.location.host
+    host = window.location.host;
   } else if (req) {
-    const detectedHost = req.headers['x-forwarded-host'] || req.headers.host
-    host = Array.isArray(detectedHost) ? detectedHost[0] : detectedHost
+    const detectedHost = req.headers["x-forwarded-host"] || req.headers.host;
+    host = Array.isArray(detectedHost) ? detectedHost[0] : detectedHost;
   }
 
   if (host) {
-    const matchingLocale = locales.find(l => l.domain === host)
+    const matchingLocale = locales.find((l) => l.domain === host);
     if (matchingLocale) {
-      return matchingLocale.code
+      return matchingLocale.code;
     }
   }
 
-  return ''
+  return "";
 }
 
 /**
@@ -114,8 +124,8 @@ export function getLocaleDomain (locales, req) {
  * @param  {readonly string[]} localeCodes
  * @return {RegExp}
  */
-export function getLocalesRegex (localeCodes) {
-  return new RegExp(`^/(${localeCodes.join('|')})(?:/|$)`, 'i')
+export function getLocalesRegex(localeCodes) {
+  return new RegExp(`^/(${localeCodes.join("|")})(?:/|$)`);
 }
 
 /**
@@ -124,11 +134,16 @@ export function getLocalesRegex (localeCodes) {
  * @param  {readonly string[]} localeCodes
  * @param  {Pick<ResolvedOptions, 'routesNameSeparator' | 'defaultLocaleRouteNameSuffix'>} options
  */
-export function createLocaleFromRouteGetter (localeCodes, { routesNameSeparator, defaultLocaleRouteNameSuffix }) {
-  const localesPattern = `(${localeCodes.join('|')})`
-  const defaultSuffixPattern = `(?:${routesNameSeparator}${defaultLocaleRouteNameSuffix})?`
-  const regexpName = new RegExp(`${routesNameSeparator}${localesPattern}${defaultSuffixPattern}$`, 'i')
-  const regexpPath = getLocalesRegex(localeCodes)
+export function createLocaleFromRouteGetter(
+  localeCodes,
+  { routesNameSeparator, defaultLocaleRouteNameSuffix }
+) {
+  const localesPattern = `(${localeCodes.join("|")})`;
+  const defaultSuffixPattern = `(?:${routesNameSeparator}${defaultLocaleRouteNameSuffix})?`;
+  const regexpName = new RegExp(
+    `${routesNameSeparator}${localesPattern}${defaultSuffixPattern}$`
+  );
+  const regexpPath = getLocalesRegex(localeCodes);
   /**
    * Extract locale code from given route:
    * - If route has a name, try to extract locale from it
@@ -136,25 +151,25 @@ export function createLocaleFromRouteGetter (localeCodes, { routesNameSeparator,
    * @param  {import('vue-router').Route} route
    * @return {string} Locale code found if any
    */
-  const getLocaleFromRoute = route => {
+  const getLocaleFromRoute = (route) => {
     // Extract from route name
     if (route.name) {
-      const matches = route.name.match(regexpName)
+      const matches = route.name.match(regexpName);
       if (matches && matches.length > 1) {
-        return matches[1]
+        return matches[1];
       }
     } else if (route.path) {
       // Extract from path
-      const matches = route.path.match(regexpPath)
+      const matches = route.path.match(regexpPath);
       if (matches && matches.length > 1) {
-        return matches[1]
+        return matches[1];
       }
     }
 
-    return ''
-  }
+    return "";
+  };
 
-  return getLocaleFromRoute
+  return getLocaleFromRoute;
 }
 
 /**
@@ -162,23 +177,26 @@ export function createLocaleFromRouteGetter (localeCodes, { routesNameSeparator,
  * @param {{ useCookie: boolean, cookieKey: string, localeCodes: readonly string[] }} options
  * @return {string | undefined}
  */
-export function getLocaleCookie (req, { useCookie, cookieKey, localeCodes }) {
+export function getLocaleCookie(req, { useCookie, cookieKey, localeCodes }) {
   if (useCookie) {
-    let localeCode
+    let localeCode;
 
     if (process.client) {
-      import('js-cookie').then(JsCookie => {
-        localeCode = JsCookie.get(cookieKey)
-      })
-    } else if (req && typeof req.headers.cookie !== 'undefined') {
-      import('cookie').then(Cookie => {
-        const cookies = req.headers && req.headers.cookie ? Cookie.parse(req.headers.cookie) : {}
-        localeCode = cookies[cookieKey]
-      })
+      import("js-cookie").then((JsCookie) => {
+        localeCode = JsCookie.get(cookieKey);
+      });
+    } else if (req && typeof req.headers.cookie !== "undefined") {
+      import("cookie").then((Cookie) => {
+        const cookies =
+          req.headers && req.headers.cookie
+            ? Cookie.parse(req.headers.cookie)
+            : {};
+        localeCode = cookies[cookieKey];
+      });
     }
 
     if (localeCode && localeCodes.includes(localeCode)) {
-      return localeCode
+      return localeCode;
     }
   }
 }
@@ -186,41 +204,54 @@ export function getLocaleCookie (req, { useCookie, cookieKey, localeCodes }) {
 /**
  * @param {string} locale
  * @param {import('http').ServerResponse | undefined} res
- * @param {{ useCookie: boolean, cookieDomain: string | null, cookieKey: string, cookieSecure: boolean, cookieCrossOrigin: boolean}} options
+ * @param {Pick<DetectBrowserLanguageOptions, 'useCookie' | 'cookieAge' | 'cookieDomain' | 'cookieKey' | 'cookieSecure' | 'cookieCrossOrigin'>} options
  */
-export function setLocaleCookie (locale, res, { useCookie, cookieDomain, cookieKey, cookieSecure, cookieCrossOrigin }) {
+export function setLocaleCookie(
+  locale,
+  res,
+  {
+    useCookie,
+    cookieAge,
+    cookieDomain,
+    cookieKey,
+    cookieSecure,
+    cookieCrossOrigin,
+  }
+) {
   if (!useCookie) {
-    return
+    return;
   }
-  const date = new Date()
-  /** @type {import('cookie').CookieSerializeOptions} */
-  const cookieOptions = {
-    expires: new Date(date.setDate(date.getDate() + 365)),
-    path: '/',
-    sameSite: cookieCrossOrigin ? 'none' : 'lax',
-    secure: cookieCrossOrigin || cookieSecure
-  }
-
-  if (cookieDomain) {
-    cookieOptions.domain = cookieDomain
-  }
-
   if (process.client) {
     // @ts-ignore
-    import('js-cookie').then(JsCookie => {
-      JsCookie.set(cookieKey, locale, cookieOptions)
-    })
+    import("js-cookie").then((JsCookie) => {
+      const cookieOptions = {
+        expires: cookieAge,
+        path: "/",
+        sameSite: cookieCrossOrigin ? "none" : "lax",
+        secure: cookieCrossOrigin || cookieSecure,
+        ...(cookieDomain ? { domain: cookieDomain } : {}),
+      };
+      JsCookie.set(cookieKey, locale, cookieOptions);
+    });
   } else if (res) {
-    import('cookie').then(Cookie => {
-      let headers = res.getHeader('Set-Cookie') || []
+    import("cookie").then((Cookie) => {
+      let headers = res.getHeader("Set-Cookie") || [];
       if (!Array.isArray(headers)) {
-        headers = [String(headers)]
+        headers = [String(headers)];
       }
 
-      const redirectCookie = Cookie.serialize(cookieKey, locale, cookieOptions)
-      headers.push(redirectCookie)
+      const cookieOptions = {
+        maxAge: cookieAge * 60 * 60 * 24, // in seconds
+        path: "/",
+        sameSite: cookieCrossOrigin ? "none" : "lax",
+        secure: cookieCrossOrigin || cookieSecure,
+        ...(cookieDomain ? { domain: cookieDomain } : {}),
+      };
 
-      res.setHeader('Set-Cookie', headers)
-    })
+      const redirectCookie = Cookie.serialize(cookieKey, locale, cookieOptions);
+      headers.push(redirectCookie);
+
+      res.setHeader("Set-Cookie", headers);
+    });
   }
 }

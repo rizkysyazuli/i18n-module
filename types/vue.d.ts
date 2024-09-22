@@ -11,20 +11,27 @@ interface NuxtI18nComponentOptions {
     [key: string]: string | false
   }
   locales?: Array<string>
-  seo?: false
 }
 
 interface NuxtI18nHeadOptions {
   /**
    * Adds a `dir` attribute to the HTML element.
-   * Default: `true`
+   * @default false
    */
   addDirAttribute?: boolean
   /**
    * Adds various SEO attributes.
-   * Default: `false`
+   * @default false
    */
-  addSeoAttributes?: boolean
+  addSeoAttributes?: boolean | SeoAttributesOptions
+}
+
+interface SeoAttributesOptions {
+  /**
+   * An array of strings corresponding to query params you would like to include in your canonical URL.
+   * @default []
+   */
+  canonicalQueries?: string[]
 }
 
 type NuxtI18nMeta = Required<Pick<MetaInfo, 'htmlAttrs' | 'link' | 'meta'>>
@@ -45,8 +52,6 @@ declare module 'vue/types/vue' {
   interface Vue extends NuxtI18nApi {
     // $i18n is already added by vue-i18n.
     $nuxtI18nHead(options?: NuxtI18nHeadOptions): NuxtI18nMeta
-    /** @deprecated Use `$nuxtI18nHead({ addDirAttribute: true, addSeoAttributes: true })` instead. */
-    $nuxtI18nSeo(): NuxtI18nMeta
   }
 }
 
